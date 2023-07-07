@@ -10,7 +10,7 @@ const { version } = require('os');
 const validCommands = ['u', 'e', 'newClient', 'leave', "ping"]; // u = update, e = event (short for conservation of bandwidth)
 
 currentID = 0; //the ID given to players when they join
-TPS = 32; //Ticks per second - this is how fast you want players to update their position and check for events
+TPS = 64; //Ticks per second - this is how fast you want players to update their position and check for events
 SERVERPORT = 6969;
 serverVersion = 1;
 
