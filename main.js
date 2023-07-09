@@ -11,8 +11,8 @@ const { version } = require('os');
 const validCommands = ['tu', 'eu', 'e', 'newClient', 'leave', "ping"]; // tu = transform update, eu = event update, e = event
 
 currentID = 0; //the ID given to players when they join
-EventTPS = 64; //how fast players check for events
-TransformTPS = 24; //how fast players update transforms
+EventTPS = 40; //how fast players check for events
+TransformTPS = 14; //how fast players update transforms
 SERVERPORT = 6969;
 serverVersion = 2;
 
