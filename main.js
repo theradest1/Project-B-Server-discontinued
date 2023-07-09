@@ -7,12 +7,14 @@ const { randomInt } = require('crypto');
 const { get } = require('http');
 const { version } = require('os');
 
-const validCommands = ['u', 'e', 'newClient', 'leave', "ping"]; // u = update, e = event (short for conservation of bandwidth)
+// (short for conservation of bandwidth)
+const validCommands = ['tu', 'eu', 'e', 'newClient', 'leave', "ping"]; // tu = transform update, eu = event update, e = event
 
 currentID = 0; //the ID given to players when they join
-TPS = 64; //Ticks per second - this is how fast you want players to update their position and check for events
+EventTPS = 64; //how fast players check for events
+TransformTPS = 24; //how fast players update transforms
 SERVERPORT = 6969;
-serverVersion = 1;
+serverVersion = 2;
 
 const maxChecksBeforeDisconnect = 3; //this times diconnect interval is how long it takes (in ms) for a player to get disconnected
 setInterval(checkDisconnectTimers, 1000);
@@ -60,19 +62,6 @@ server.on('message', (msg, senderInfo) => {
 
 //Server functions -----------------------------------------------------------------------------
 function checkDisconnectTimers() {
-	/*console.log("_____________")
-	console.log("Transforms: ");
-	console.log(playerTransformInfo);
-	console.log("Current player IDs: ");
-	console.log(currentPlayerIDs);
-	console.log("Player disconnect timers: ");       //this basically debugs everything in one second intervals
-	console.log(playerDisconnectTimers);
-	console.log("Player usernames: ");
-	console.log(playerInfo);
-	console.log("Events to send: ");
-	console.log(eventsToSend);*/
-
-	//find all players to disconnect
 	playerIndexesToDisconnect = [];
 	for (playerListID in playerDisconnectTimers) {
 		playerDisconnectTimers[playerListID]++;
@@ -116,6 +105,7 @@ function logSenderInfo(msg, senderInfo) {
 
 //Client functions -----------------------------------------------------------------------------
 function ping(info, senderPort, senderAddress) {
+	console.log("ping");
 	server.send(serverVersion + "", senderPort, senderAddress);
 }
 
@@ -125,7 +115,7 @@ function leave(info, senderPort, senderAddress) {
 }
 
 function newClient(info, senderPort, senderAddress) {
-	server.send(currentID + "~" + TPS, senderPort, senderAddress);
+	server.send(currentID + "~" + TransformTPS + "~" + EventTPS, senderPort, senderAddress);
 
 	splitInfo = info.split("~");
 
@@ -155,9 +145,8 @@ function e(info, senderPort, senderAddress) {
 	addEventToAll(newEvent);
 }
 
-async function u(info, senderPort, senderAddress) {
+async function tu(info, senderPort, senderAddress) {
 	splitInfo = info.split("~")
-	//console.log("Player with ID " + splitInfo[1] + " updated");
 	transformsToSend = "";
 	for (playerIndex in currentPlayerIDs) {
 		if (currentPlayerIDs[playerIndex] != splitInfo[1]) {
@@ -166,13 +155,24 @@ async function u(info, senderPort, senderAddress) {
 	}
 	playerIndex = currentPlayerIDs.indexOf(parseInt(splitInfo[1]));
 	if (playerIndex != -1) {
-		server.send(eventsToSend[playerIndex] + transformsToSend, senderPort, senderAddress); //send events, and later other players new positions
-		eventsToSend[playerIndex] = "";
+		server.send(transformsToSend, senderPort, senderAddress);
 		playerTransformInfo[playerIndex] = splitInfo[2] + "~" + splitInfo[3];
 		playerDisconnectTimers[playerIndex] = 0;
 	}
 	else {
 		console.log("ERROR: player with ID " + splitInfo[1] + " is not currently in the game but tried to update transform");
+	}
+}
+async function eu(info, senderPort, senderAddress) {
+	splitInfo = info.split("~")
+	playerIndex = currentPlayerIDs.indexOf(parseInt(splitInfo[1]));
+	if (playerIndex != -1) {
+		server.send(eventsToSend[playerIndex], senderPort, senderAddress);
+		eventsToSend[playerIndex] = "";
+		playerDisconnectTimers[playerIndex] = 0;
+	}
+	else {
+		console.log("ERROR: player with ID " + splitInfo[1] + " is not currently in the game but tried to update events");
 	}
 }
 
