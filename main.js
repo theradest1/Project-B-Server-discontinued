@@ -14,8 +14,9 @@ currentID = 0; //the ID given to players when they join
 EventTPS = 40; //how fast players check for events
 TransformTPS = 14; //how fast players update transforms
 SERVERPORT = 6969;
-serverVersion = 3;
+serverVersion = 4;
 currentUMessageID = 0; //for tracking what order messages are recieved;
+maxMessageID = 150; //when the message loops
 
 const maxChecksBeforeDisconnect = 3; //this times diconnect interval is how long it takes (in ms) for a player to get disconnected
 setInterval(checkDisconnectTimers, 1000);
@@ -118,7 +119,7 @@ function leave(info, senderPort, senderAddress) {
 }
 
 function newClient(info, senderPort, senderAddress) {
-	server.send(currentID + "~" + TransformTPS + "~" + EventTPS, senderPort, senderAddress);
+	server.send(currentID + "~" + TransformTPS + "~" + EventTPS + "~" + maxMessageID, senderPort, senderAddress);
 
 	splitInfo = info.split("~");
 
@@ -160,6 +161,9 @@ async function tu(info, senderPort, senderAddress) {
 	playerIndex = currentPlayerIDs.indexOf(parseInt(splitInfo[1]));
 	if (playerIndex != -1) {
 		uMessageIDs[playerIndex] += 1;
+		if (uMessageIDs[playerIndex] >= maxMessageID) {
+			uMessageIDs[playerIndex] = 0;
+		}
 		server.send(transformsToSend + uMessageIDs[playerIndex], senderPort, senderAddress);
 		playerTransformInfo[playerIndex] = splitInfo[2] + "~" + splitInfo[3];
 		playerDisconnectTimers[playerIndex] = 0;
