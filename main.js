@@ -14,7 +14,8 @@ currentID = 0; //the ID given to players when they join
 EventTPS = 40; //how fast players check for events
 TransformTPS = 14; //how fast players update transforms
 SERVERPORT = 6969;
-serverVersion = 2;
+serverVersion = 3;
+currentUMessageID = 0; //for tracking what order messages are recieved;
 
 const maxChecksBeforeDisconnect = 3; //this times diconnect interval is how long it takes (in ms) for a player to get disconnected
 setInterval(checkDisconnectTimers, 1000);
@@ -24,6 +25,7 @@ playerInfo = []; //usernames, might be more later
 currentPlayerIDs = []; //IDs (to find where other information is without having to do larger calculations)
 playerDisconnectTimers = []; //disconnect timers that go up untill they are disconnected because of not updating their transform
 eventsToSend = []; //events that que up untill the client calls an update, where they are dumped and the client then processes them
+uMessageIDs = [];
 
 //if server runs into an un-handled error
 server.on('error', (err) => {
@@ -86,6 +88,7 @@ function disconnectClient(playerIndex) {
 	delete playerTransformInfo[playerIndex];
 	delete playerInfo[playerIndex];
 	delete eventsToSend[playerIndex];
+	delete uMessageIDs[playerIndex];
 }
 
 function addEventToAll(eventString) {
@@ -134,6 +137,7 @@ function newClient(info, senderPort, senderAddress) {
 	playerTransformInfo.push("(0, 0, 0)~(0, 0, 0, 1)");
 	playerDisconnectTimers.push(0);
 	currentPlayerIDs.push(currentID);
+	uMessageIDs.push(0);
 
 	currentID++;
 }
@@ -155,7 +159,8 @@ async function tu(info, senderPort, senderAddress) {
 	}
 	playerIndex = currentPlayerIDs.indexOf(parseInt(splitInfo[1]));
 	if (playerIndex != -1) {
-		server.send(transformsToSend, senderPort, senderAddress);
+		uMessageIDs[playerIndex] += 1;
+		server.send(transformsToSend + uMessageIDs[playerIndex], senderPort, senderAddress);
 		playerTransformInfo[playerIndex] = splitInfo[2] + "~" + splitInfo[3];
 		playerDisconnectTimers[playerIndex] = 0;
 	}
